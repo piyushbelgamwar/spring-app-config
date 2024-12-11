@@ -6,3 +6,45 @@ eureka:
     register-with-eureka: true
     service-url:
       defaultZone: ${EUREKA_SERVER_ADDRESS:http://localhost:8761/eureka}
+private static String setAttributesToNull(String jsonString, List<String> attributesToSetNull) {
+    if (jsonString == null || jsonString.isEmpty()) {
+        throw new IllegalArgumentException("JSON string cannot be null or empty");
+    }
+    if (attributesToSetNull == null || attributesToSetNull.isEmpty()) {
+        throw new IllegalArgumentException("Attributes to set to null must be non-null and non-empty");
+    }
+
+    ObjectMapper mapper = new ObjectMapper();
+
+    try {
+        // Parse the JSON string into a JsonNode
+        JsonNode rootNode = mapper.readTree(jsonString);
+
+        // Modify the JsonNode to set specified attributes to null
+        modifyJsonNode(rootNode, attributesToSetNull);
+
+        // Convert the modified JsonNode back to a JSON string
+        return mapper.writeValueAsString(rootNode);
+
+    } catch (JsonProcessingException e) {
+        throw new RuntimeException("Failed to process JSON string", e);
+    }
+}
+
+// Helper method to modify the JsonNode recursively
+private static void modifyJsonNode(JsonNode node, List<String> attributesToSetNull) {
+    if (node.isObject()) {
+        ObjectNode objectNode = (ObjectNode) node;
+        attributesToSetNull.forEach(attribute -> {
+            // Set the attribute to null if it exists
+            if (objectNode.has(attribute)) {
+                objectNode.putNull(attribute);
+            }
+        });
+    }
+
+    // Recursively process nested objects or arrays
+    if (node.isContainerNode()) {
+        node.forEach(child -> modifyJsonNode(child, attributesToSetNull));
+    }
+}
